@@ -10,7 +10,8 @@ The two weeks are counted back from each listener's own last play, not a shared
 calendar cutoff. Plays at or after `last play - 14 days` are held out; every
 earlier play is training data. Rows are never shuffled.
 
-This produces 56 training plays and 24 held-out plays across 19 listeners.
+On the available file, the earlier exploratory run produced 56 training plays
+and 24 held-out plays across 19 listeners.
 All 19 have held-out plays, but 3 have no training history. Thus, two weeks is a
 practical compromise, not a guarantee of many evaluation examples per listener;
 these small-sample metrics should be interpreted cautiously.
@@ -28,6 +29,44 @@ these small-sample metrics should be interpreted cautiously.
 
 # What I checked or changed
 
+- Current status: **the downloaded file fails the resource-description checks**.
+  `python split.py` now writes those checks to output.txt, exits with status 1,
+  and does not split or score a mismatched file by default. The previous
+  19-listener scores are not an accepted full-data baseline for step 2.
+- Compared the file against the description, not just another local copy:
+  80 rows versus approximately 40,000, 19 listeners versus 2,000, and only 46
+  played catalogue tracks versus the stated coverage of all 60. The report
+  lists the 14 missing track IDs. The date range matches 15 weeks. The largest
+  observed listener history has 9 plays; median is 3, with 90th/95th/99th
+  percentiles 7.4/9/9. No quantitative heavy-listener requirement was provided,
+  so these are diagnostics rather than an invented pass criterion.
+- The user clarified that the description refers to niche tastes such as
+  phonk and ambient. The input has 9 ambient plays across 6 listeners and no
+  tracks labelled phonk in either the catalogue or the play log. The report
+  prints play/listener counts by genre. This does not establish listener taste
+  or verify a named niche listener: no exact listener IDs or taste criteria
+  from the description were supplied.
+- A fresh download from Resources has **not** been performed or independently
+  verified. Only the existing Desktop attachment and project copy are available
+  here; the task page/download control is not available in the supplied browser
+  context. The available file does not substantiate the described full log,
+  but these checks alone cannot identify whether the cause is the attachment,
+  download, export, or description. Do not label the discrepancy resolved.
+- Added source-screening CLI options. To inspect a freshly downloaded file:
+  `python split.py --play-log "/path/to/fresh.csv"`. Optional
+  `--expected-user-id ID` and `--min-heavy-listener-plays N` check specific
+  source claims when their actual values are known. Approximate 40,000 rows is
+  reported, not treated as an exact row-count constraint. Passing the available
+  checks is not proof that the download is authentic or complete.
+- Sample-only diagnostics require explicit opt-in:
+  `python split.py --allow-sample --output sample_output.txt`. The output is
+  clearly labelled exploratory; it must not be used as the full-data baseline.
+  Committed sample_output.txt preserves the earlier date-pair and metric checks
+  under that warning; output.txt remains the default source-validation failure.
+- Added regression tests: `python -m unittest -v test_split` (5 passing).
+  They cover input rejection, synthetic matching counts, named-user and heavy
+  listener checks, cutoff ties, unique-track recall, and the CLI sample opt-in.
+  Synthetic fixtures are test data only, not replacement listening records.
 - The brief describes about 2,000 listeners over about 15 weeks, and the review
   expects about 40,000 play rows. The downloaded CSV actually contains 80 data
   rows and 19 distinct listeners over 27 May-8 September 2024 (105 calendar days,
@@ -67,11 +106,12 @@ these small-sample metrics should be interpreted cautiously.
 - Calculated recall from unique held-out tracks per listener, then averaged
   those fractions. Duplicate held-out plays count once. Listeners without
   held-out plays are skipped rather than assigned zero; the current count is 0.
-- Verified overall recall@10 is 0.315789 (31.58%) and catalogue coverage is
+- Earlier exploratory run: overall recall@10 was 0.315789 (31.58%) and catalogue coverage was
   10 / 60 = 0.166667 (16.67%). Independently recomputed the metrics and checked
   deterministic ties and duplicate handling on small examples.
 - Defined short histories as at or below the median training play count of 2,
   and long histories as above it. Short: 10 listeners, recall@10 30.00%; long:
   9 listeners, recall@10 33.33%. Both use the same global top 10.
 - Matched all 10 recommendations to catalogue genres: 5 pop, 4 rock, 1 ambient.
-- Confirmed output.txt exactly matches the report printed by split.py.
+- Regenerated output.txt as the failed source-validation report; it no longer
+  publishes the exploratory scores as an accepted baseline.

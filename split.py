@@ -1,8 +1,68 @@
 """Inspect Spotify data and hold out each listener's final two weeks."""
 
+import argparse
 from pathlib import Path
 
 import pandas as pd
+
+
+def check_source(
+    events: pd.DataFrame, catalogue: pd.DataFrame,
+    expected_user_ids: list[str], min_heavy_listener_plays: int | None,
+) -> tuple[list[str], bool]:
+    """Screen downloaded data against the resource facts available to us."""
+    dates = pd.to_datetime(events["played_at"], errors="raise")
+    counts = events.groupby("user_id").size()
+    played_ids = set(events["track_id"].dropna())
+    catalogue_ids = set(catalogue["track_id"].dropna())
+    missing_tracks = sorted(catalogue_ids - played_ids)
+    unknown_tracks = sorted(played_ids - catalogue_ids)
+    checks = [
+        ("2,000 distinct listeners", len(counts) == 2000),
+        ("60 unique catalogue tracks, one row each", len(catalogue) == len(catalogue_ids) == 60),
+        ("All 60 catalogue tracks appear in the play log", len(catalogue_ids) == 60 and not missing_tracks),
+        ("No unknown track IDs", not unknown_tracks),
+        ("No missing user_id, track_id, or played_at", not events[["user_id", "track_id", "played_at"]].isna().any().any()),
+        ("Dates span 27 May-8 September 2024", dates.min() == pd.Timestamp("2024-05-27") and dates.max() == pd.Timestamp("2024-09-08")),
+    ]
+    lines = [
+        "INPUT CHECK AGAINST RESOURCE DESCRIPTION (before splitting/scoring)",
+        f"Play log rows: {len(events)}; resource describes approximately 40,000.",
+        "The approximate row count is reported for comparison, not treated as an exact requirement.",
+        f"Distinct listeners: {len(counts)}; expected: 2,000.",
+        f"Played catalogue tracks: {len(played_ids & catalogue_ids)} / {len(catalogue_ids)}; expected: 60 / 60.",
+        f"Missing catalogue track IDs: {', '.join(missing_tracks) or 'none'}",
+        f"Unknown track IDs: {', '.join(unknown_tracks) or 'none'}",
+        f"Observed dates: {dates.min()} to {dates.max()}",
+        "Plays per listener (downloaded file, before splitting):",
+        counts.describe(percentiles=[0.5, 0.9, 0.95, 0.99]).to_string(),
+        "Most active listeners in downloaded file:",
+        counts.rename("plays").sort_values(ascending=False).head(10).to_string(),
+    ]
+    if expected_user_ids:
+        actual_ids = set(events["user_id"].astype(str))
+        for user_id in expected_user_ids:
+            checks.append((f"Named source listener {user_id} is present", user_id in actual_ids))
+    else:
+        lines.append("Named-listener check: NOT CHECKED; exact source user ID was not supplied.")
+    if min_heavy_listener_plays is not None:
+        checks.append((f"At least one listener has >= {min_heavy_listener_plays} plays", not counts.empty and counts.max() >= min_heavy_listener_plays))
+    else:
+        lines.append("Heavy-listener claim: NOT CHECKED; no numerical source criterion was supplied.")
+    if catalogue["track_id"].is_unique:
+        genre_events = events.merge(catalogue[["track_id", "genre"]], on="track_id", how="left", validate="many_to_one")
+        genres = genre_events.groupby("genre").agg(plays=("track_id", "size"), listeners=("user_id", "nunique"))
+        genres = genres.reindex(sorted(set(catalogue["genre"].dropna()) | {"phonk", "ambient"}), fill_value=0)
+        lines.extend([
+            "Genre diagnostics in the input (not a claim about listener taste):",
+            genres.to_string(),
+            "Niche-listener claim: UNVERIFIED; no source listener IDs or taste criterion supplied.",
+        ])
+    lines.extend(f"{'PASS' if passed else 'FAIL'}: {label}" for label, passed in checks)
+    passed = all(passed for _, passed in checks)
+    lines.append(f"Source-description screening: {'PASS' if passed else 'FAIL'}")
+    lines.append("These checks do not independently authenticate the server-side attachment or the download.")
+    return [line.rstrip() for line in "\n".join(lines).splitlines()], passed
 
 
 def split_plays(play_events: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -48,12 +108,35 @@ def popularity_baseline(
     return top_tracks, recall_at_10, coverage
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     data_dir = Path(__file__).resolve().parent
-    play_events = pd.read_csv(
-        data_dir / "spotify_play_events_2024-05-27_to_2024-09-08.csv"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--play-log", type=Path, default=data_dir / "spotify_play_events_2024-05-27_to_2024-09-08.csv")
+    parser.add_argument("--catalogue", type=Path, default=data_dir / "spotify_track_catalogue_2024-09.csv")
+    parser.add_argument("--output", type=Path, default=data_dir / "output.txt")
+    parser.add_argument("--allow-sample", action="store_true", help="Explicitly allow exploratory scoring after failed source checks.")
+    parser.add_argument("--expected-user-id", action="append", default=[], help="Listener ID explicitly named by the source; repeat as needed.")
+    parser.add_argument("--min-heavy-listener-plays", type=int, help="Minimum play count promised for a heavy listener, if specified by the source.")
+    args = parser.parse_args(argv)
+    play_events = pd.read_csv(args.play_log)
+    track_catalogue = pd.read_csv(args.catalogue)
+    validation, source_matches = check_source(
+        play_events, track_catalogue, args.expected_user_id, args.min_heavy_listener_plays
     )
-    track_catalogue = pd.read_csv(data_dir / "spotify_track_catalogue_2024-09.csv")
+    validation.insert(1, f"Input file: {args.play_log.name}")
+    if not source_matches and not args.allow_sample:
+        report = "\n".join(validation + [
+            "",
+            "BLOCKED: input does not match the described full dataset.",
+            "Recall@10: NOT COMPUTED. Catalogue coverage: NOT COMPUTED.",
+            "Do not use previous 19-listener scores as the full-data baseline for later models.",
+            "Re-download the attachment from task Resources and run with --play-log PATH.",
+            "A fresh resource download has not been performed or verified by this script.",
+            "For sample-only diagnostics, use --allow-sample --output sample_output.txt.",
+        ])
+        args.output.write_text(report + "\n", encoding="utf-8")
+        print(report)
+        return 1
 
     training, held_out = split_plays(play_events)
     listeners_without_holdout = len(
@@ -103,7 +186,9 @@ def main() -> None:
     )
 
     report = "\n".join(
-        [
+        validation + [
+            "",
+            "EXPLORATORY SAMPLE ONLY: not a full-data baseline." if not source_matches else "Source-description screening passed; download provenance still needs verification.",
             f"Play log rows: {len(play_events)}",
             f"Catalogue rows: {len(track_catalogue)}",
             f"Distinct users in play log: {play_events['user_id'].nunique()}",
@@ -147,9 +232,10 @@ def main() -> None:
             genres.to_string(index=False),
         ]
     )
-    (data_dir / "output.txt").write_text(report + "\n", encoding="utf-8")
+    args.output.write_text(report + "\n", encoding="utf-8")
     print(report)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
