@@ -1,0 +1,85 @@
+Play log rows: 80
+Catalogue rows: 60
+Distinct users in play log: 19
+Distinct tracks in play log: 46
+Tracks in catalogue (distinct track_id): 60
+
+Holdout: each listener's final 2 weeks, counted back from their own last play.
+Reason: This preserves most of the history for training and evaluates recommendations on future listening events.
+Training: played_at < last play - 14 days; held-out: played_at >= cutoff.
+Training rows: 56
+Held-out rows: 24
+
+Split boundaries for five listeners (NaT means no training history):
+ user_id latest_training_played_at earliest_held_out_played_at
+  100012                2024-08-10                  2024-09-08
+  100018                2024-08-07                  2024-09-03
+  100031                2024-07-31                  2024-08-21
+  100048                2024-07-26                  2024-08-19
+  100073                2024-08-04                  2024-08-31
+
+Popularity baseline: same top 10 training tracks for every listener.
+Ranked by play-event count; ties broken by track_id ascending.
+track_id  training_plays              track_name       artist_name
+trk_0001               8          Mr. Brightside       The Killers
+trk_0002               7         Blinding Lights        The Weeknd
+trk_0003               4              Levitating          Dua Lipa
+trk_0004               4            Shape of You        Ed Sheeran
+trk_0005               2 Smells Like Teen Spirit           Nirvana
+trk_0007               2            Viva La Vida          Coldplay
+trk_0055               2                   Ambre        Nils Frahm
+trk_0006               1               Anti-Hero      Taylor Swift
+trk_0008               1                 bad guy     Billie Eilish
+trk_0009               1       Seven Nation Army The White Stripes
+
+Recall@10: mean per-listener fraction of unique held-out tracks recommended.
+Listeners with no held-out plays: 0
+Recall policy: skip listeners with no held-out plays; do not count them as zero.
+Evaluated listeners: 19
+Recall@10: 0.315789 (31.58%)
+Catalogue coverage: distinct tracks in at least one shortlist / catalogue rows.
+Catalogue coverage: 0.166667 (16.67%)
+
+Chronological check for every listener:
+ user_id latest_training_played_at earliest_held_out_played_at                  check
+  100012                2024-08-10                  2024-09-08                   PASS
+  100018                2024-08-07                  2024-09-03                   PASS
+  100031                2024-07-31                  2024-08-21                   PASS
+  100048                2024-07-26                  2024-08-19                   PASS
+  100073                2024-08-04                  2024-08-31                   PASS
+  100102                2024-07-29                  2024-08-16                   PASS
+  100217                2024-08-03                  2024-08-15                   PASS
+  100305                2024-07-21                  2024-08-12                   PASS
+  100441                2024-08-01                  2024-08-24                   PASS
+  100586                2024-07-12                  2024-08-13                   PASS
+  100708                2024-07-17                  2024-08-09                   PASS
+  100912                2024-07-22                  2024-08-18                   PASS
+  101126                2024-07-28                  2024-08-25                   PASS
+  101437                2024-08-06                  2024-09-01                   PASS
+  101711                2024-07-08                  2024-08-22                   PASS
+  101882                2024-07-19                  2024-09-04                   PASS
+  101991                       NaT                  2024-08-27 N/A: no training plays
+  101996                       NaT                  2024-08-30 N/A: no training plays
+  101999                       NaT                  2024-09-06 N/A: no training plays
+PASS: checked all 19 listeners; 16 have both training and held-out plays.
+Held-out plays at or before their listener's last training play: 0
+N/A rows have no pair of training/held-out boundaries to compare.
+
+History cohorts use training play counts; median across all listeners: 2.
+Short: <= 2 training plays; long: > 2 training plays.
+Both cohorts use the same global top 10; listeners without holdout are skipped.
+Short histories: 10 listeners; 10 evaluated; Recall@10: 0.300000 (30.00%)
+Long histories: 9 listeners; 9 evaluated; Recall@10: 0.333333 (33.33%)
+
+Genres of the 10 recommended tracks:
+track_id              track_name   genre
+trk_0001          Mr. Brightside    rock
+trk_0002         Blinding Lights     pop
+trk_0003              Levitating     pop
+trk_0004            Shape of You     pop
+trk_0005 Smells Like Teen Spirit    rock
+trk_0007            Viva La Vida    rock
+trk_0055                   Ambre ambient
+trk_0006               Anti-Hero     pop
+trk_0008                 bad guy     pop
+trk_0009       Seven Nation Army    rock
