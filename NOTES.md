@@ -38,18 +38,24 @@ these small-sample metrics should be interpreted cautiously.
   played catalogue tracks versus the stated coverage of all 60. The report
   lists the 14 missing track IDs. The date range matches 15 weeks. The largest
   observed listener history has 9 plays; median is 3, with 90th/95th/99th
-  percentiles 7.4/9/9. No quantitative heavy-listener requirement was provided,
-  so these are diagnostics rather than an invented pass criterion.
+  percentiles 7.4/9/9.
+- Checked the specific source promise stated in the review: **user_id 100217
+  should have 60+ plays across at least 8 distinct tracks**. In the downloaded
+  file this listener exists but has **9 plays across 6 distinct tracks**.
+  Both the play-count and distinct-track checks FAIL. They run automatically
+  before splitting and do not require CLI flags. This directly contradicts
+  a checkable promise about the full log; matching local hashes cannot fix it.
+  The previous explanation that no named-listener ID/count criterion was
+  supplied was incorrect and has been removed from the reports.
 - The user clarified that the description refers to niche tastes such as
   phonk and ambient. The input has 9 ambient plays across 6 listeners and no
   tracks labelled phonk in either the catalogue or the play log. The report
-  prints play/listener counts by genre. This does not establish listener taste
-  or verify a named niche listener: no exact listener IDs or taste criteria
-  from the description were supplied.
+  prints play/listener counts by genre. These counts do not by themselves
+  establish taste; the explicit 100217 count/breadth promise is tested above.
 - A fresh download from Resources has **not** been performed or independently
   verified. Only the existing Desktop attachment and project copy are available
-  here; the task page/download control is not available in the supplied browser
-  context. The available file does not substantiate the described full log,
+  here. Checked the available browser tabs: all three are GitHub pages; none is
+  the task page or its attachment download control. The available file does not substantiate the described full log,
   but these checks alone cannot identify whether the cause is the attachment,
   download, export, or description. Do not label the discrepancy resolved.
 - Added source-screening CLI options. To inspect a freshly downloaded file:
@@ -63,9 +69,11 @@ these small-sample metrics should be interpreted cautiously.
   clearly labelled exploratory; it must not be used as the full-data baseline.
   Committed sample_output.txt preserves the earlier date-pair and metric checks
   under that warning; output.txt remains the default source-validation failure.
-- Added regression tests: `python -m unittest -v test_split` (5 passing).
+- Added regression tests: `python -m unittest -v test_split` (6 passing).
   They cover input rejection, synthetic matching counts, named-user and heavy
   listener checks, cutoff ties, unique-track recall, and the CLI sample opt-in.
+  The named listener test checks 9 plays/6 tracks, 60/7, 59/8 and the passing
+  boundary of 60/8, so play count and breadth are validated independently.
   Synthetic fixtures are test data only, not replacement listening records.
 - The brief describes about 2,000 listeners over about 15 weeks, and the review
   expects about 40,000 play rows. The downloaded CSV actually contains 80 data

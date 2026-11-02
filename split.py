@@ -17,6 +17,9 @@ def check_source(
     catalogue_ids = set(catalogue["track_id"].dropna())
     missing_tracks = sorted(catalogue_ids - played_ids)
     unknown_tracks = sorted(played_ids - catalogue_ids)
+    named_listener = events.loc[events["user_id"].astype(str) == "100217"]
+    named_plays = len(named_listener)
+    named_tracks = named_listener["track_id"].nunique()
     checks = [
         ("2,000 distinct listeners", len(counts) == 2000),
         ("60 unique catalogue tracks, one row each", len(catalogue) == len(catalogue_ids) == 60),
@@ -24,6 +27,9 @@ def check_source(
         ("No unknown track IDs", not unknown_tracks),
         ("No missing user_id, track_id, or played_at", not events[["user_id", "track_id", "played_at"]].isna().any().any()),
         ("Dates span 27 May-8 September 2024", dates.min() == pd.Timestamp("2024-05-27") and dates.max() == pd.Timestamp("2024-09-08")),
+        ("Source listener 100217 is present", named_plays > 0),
+        ("Source listener 100217 has >= 60 plays", named_plays >= 60),
+        ("Source listener 100217 has >= 8 distinct tracks", named_tracks >= 8),
     ]
     lines = [
         "INPUT CHECK AGAINST RESOURCE DESCRIPTION (before splitting/scoring)",
@@ -34,6 +40,8 @@ def check_source(
         f"Missing catalogue track IDs: {', '.join(missing_tracks) or 'none'}",
         f"Unknown track IDs: {', '.join(unknown_tracks) or 'none'}",
         f"Observed dates: {dates.min()} to {dates.max()}",
+        "Specific source promise: user_id 100217 has 60+ plays across 8 or more tracks.",
+        f"Observed user_id 100217: {named_plays} plays across {named_tracks} distinct tracks.",
         "Plays per listener (downloaded file, before splitting):",
         counts.describe(percentiles=[0.5, 0.9, 0.95, 0.99]).to_string(),
         "Most active listeners in downloaded file:",
@@ -43,12 +51,8 @@ def check_source(
         actual_ids = set(events["user_id"].astype(str))
         for user_id in expected_user_ids:
             checks.append((f"Named source listener {user_id} is present", user_id in actual_ids))
-    else:
-        lines.append("Named-listener check: NOT CHECKED; exact source user ID was not supplied.")
     if min_heavy_listener_plays is not None:
         checks.append((f"At least one listener has >= {min_heavy_listener_plays} plays", not counts.empty and counts.max() >= min_heavy_listener_plays))
-    else:
-        lines.append("Heavy-listener claim: NOT CHECKED; no numerical source criterion was supplied.")
     if catalogue["track_id"].is_unique:
         genre_events = events.merge(catalogue[["track_id", "genre"]], on="track_id", how="left", validate="many_to_one")
         genres = genre_events.groupby("genre").agg(plays=("track_id", "size"), listeners=("user_id", "nunique"))
@@ -56,7 +60,7 @@ def check_source(
         lines.extend([
             "Genre diagnostics in the input (not a claim about listener taste):",
             genres.to_string(),
-            "Niche-listener claim: UNVERIFIED; no source listener IDs or taste criterion supplied.",
+            "The explicit count/breadth promise for listener 100217 is checked above; genre counts alone do not define taste.",
         ])
     lines.extend(f"{'PASS' if passed else 'FAIL'}: {label}" for label, passed in checks)
     passed = all(passed for _, passed in checks)

@@ -7,6 +7,8 @@ Played catalogue tracks: 46 / 60; expected: 60 / 60.
 Missing catalogue track IDs: trk_0041, trk_0042, trk_0043, trk_0044, trk_0045, trk_0046, trk_0050, trk_0051, trk_0052, trk_0053, trk_0054, trk_0058, trk_0059, trk_0060
 Unknown track IDs: none
 Observed dates: 2024-05-27 00:00:00 to 2024-09-08 00:00:00
+Specific source promise: user_id 100217 has 60+ plays across 8 or more tracks.
+Observed user_id 100217: 9 plays across 6 distinct tracks.
 Plays per listener (downloaded file, before splitting):
 count    19.000000
 mean      4.210526
@@ -29,8 +31,6 @@ user_id
 100305    4
 100441    4
 100586    3
-Named-listener check: NOT CHECKED; exact source user ID was not supplied.
-Heavy-listener claim: NOT CHECKED; no numerical source criterion was supplied.
 Genre diagnostics in the input (not a claim about listener taste):
                   plays  listeners
 genre
@@ -45,13 +45,16 @@ phonk                 0          0
 pop                  26         13
 regional mexican      4          4
 rock                 17          8
-Niche-listener claim: UNVERIFIED; no source listener IDs or taste criterion supplied.
+The explicit count/breadth promise for listener 100217 is checked above; genre counts alone do not define taste.
 FAIL: 2,000 distinct listeners
 PASS: 60 unique catalogue tracks, one row each
 FAIL: All 60 catalogue tracks appear in the play log
 PASS: No unknown track IDs
 PASS: No missing user_id, track_id, or played_at
 PASS: Dates span 27 May-8 September 2024
+PASS: Source listener 100217 is present
+FAIL: Source listener 100217 has >= 60 plays
+FAIL: Source listener 100217 has >= 8 distinct tracks
 Source-description screening: FAIL
 These checks do not independently authenticate the server-side attachment or the download.
 
