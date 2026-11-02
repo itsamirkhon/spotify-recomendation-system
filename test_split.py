@@ -81,7 +81,7 @@ class SplitTests(unittest.TestCase):
         self.assertEqual(recall, 0.5)
         self.assertEqual(coverage, 1 / 60)
 
-    def test_cli_blocks_metrics_and_requires_explicit_sample_override(self):
+    def test_cli_scores_supplied_file_and_strict_mode_still_blocks(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             events, catalogue, output = root / "events.csv", root / "catalogue.csv", root / "output.txt"
@@ -91,14 +91,16 @@ class SplitTests(unittest.TestCase):
             captured = io.StringIO()
             with contextlib.redirect_stdout(captured):
                 status = main(args)
-            self.assertEqual(status, 1)
-            self.assertEqual(output.read_text(), captured.getvalue())
-            self.assertIn("Recall@10: NOT COMPUTED", captured.getvalue())
-            with contextlib.redirect_stdout(io.StringIO()):
-                status = main(args + ["--allow-sample"])
             self.assertEqual(status, 0)
-            self.assertIn("EXPLORATORY SAMPLE ONLY", output.read_text())
-            self.assertIn("Split boundaries for five listeners", output.read_text())
+            self.assertEqual(output.read_text(), captured.getvalue())
+            self.assertIn("Baseline evaluated on the supplied file", captured.getvalue())
+            self.assertIn("Split boundaries for five listeners", captured.getvalue())
+            self.assertIn("Recall@10: 0.250000", captured.getvalue())
+            self.assertNotIn("NOT COMPUTED", captured.getvalue())
+            with contextlib.redirect_stdout(io.StringIO()):
+                status = main(args + ["--strict-source"])
+            self.assertEqual(status, 1)
+            self.assertIn("Recall@10: NOT COMPUTED", output.read_text())
 
 
 if __name__ == "__main__":

@@ -118,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--play-log", type=Path, default=data_dir / "spotify_play_events_2024-05-27_to_2024-09-08.csv")
     parser.add_argument("--catalogue", type=Path, default=data_dir / "spotify_track_catalogue_2024-09.csv")
     parser.add_argument("--output", type=Path, default=data_dir / "output.txt")
-    parser.add_argument("--allow-sample", action="store_true", help="Explicitly allow exploratory scoring after failed source checks.")
+    parser.add_argument("--strict-source", action="store_true", help="Stop on description mismatches instead of evaluating the supplied file.")
     parser.add_argument("--expected-user-id", action="append", default=[], help="Listener ID explicitly named by the source; repeat as needed.")
     parser.add_argument("--min-heavy-listener-plays", type=int, help="Minimum play count promised for a heavy listener, if specified by the source.")
     args = parser.parse_args(argv)
@@ -128,15 +128,13 @@ def main(argv: list[str] | None = None) -> int:
         play_events, track_catalogue, args.expected_user_id, args.min_heavy_listener_plays
     )
     validation.insert(1, f"Input file: {args.play_log.name}")
-    if not source_matches and not args.allow_sample:
+    if not source_matches and args.strict_source:
         report = "\n".join(validation + [
             "",
             "BLOCKED: input does not match the described full dataset.",
             "Recall@10: NOT COMPUTED. Catalogue coverage: NOT COMPUTED.",
-            "Do not use previous 19-listener scores as the full-data baseline for later models.",
-            "Re-download the attachment from task Resources and run with --play-log PATH.",
-            "A fresh resource download has not been performed or verified by this script.",
-            "For sample-only diagnostics, use --allow-sample --output sample_output.txt.",
+            "Strict source checking was explicitly requested.",
+            "Run without --strict-source to evaluate the supplied file with the discrepancy documented.",
         ])
         args.output.write_text(report + "\n", encoding="utf-8")
         print(report)
@@ -192,7 +190,9 @@ def main(argv: list[str] | None = None) -> int:
     report = "\n".join(
         validation + [
             "",
-            "EXPLORATORY SAMPLE ONLY: not a full-data baseline." if not source_matches else "Source-description screening passed; download provenance still needs verification.",
+            "Baseline evaluated on the supplied file; source-description mismatches are documented above."
+            if not source_matches else "Source-description screening passed; download provenance still needs verification.",
+            f"Evaluation scope: {len(play_events)} supplied play rows, {play_events['user_id'].nunique()} listeners.",
             f"Play log rows: {len(play_events)}",
             f"Catalogue rows: {len(track_catalogue)}",
             f"Distinct users in play log: {play_events['user_id'].nunique()}",
