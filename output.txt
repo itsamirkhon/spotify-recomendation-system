@@ -145,3 +145,14 @@ trk_0055                   Ambre ambient
 trk_0006               Anti-Hero     pop
 trk_0008                 bad guy     pop
 trk_0009       Seven Nation Army    rock
+
+Holdout-size comparison on supplied file (not optimized using recall):
+ holdout_days  training_plays  held_out_plays  listeners_without_training  listeners_with_one_held_out_play
+            7              59              21                           1                                17
+           14              56              24                           3                                16
+           21              54              26                           3                                14
+14 days retains 56 training plays and supplies 24 held-out plays, with 3 listeners lacking training.
+Compared with 7 days, this adds 3 evaluation plays but loses 3 training plays and 2 warm listeners.
+Compared with 21 days, this preserves 2 training plays at the cost of 2 evaluation plays.
+Retained the preselected 14-day horizon for consistent future-model comparisons.
+16 of 19 listeners have just one held-out play: this is a small, uncertain evaluation, not evidence that 14 days is optimal.

@@ -69,15 +69,17 @@ def check_source(
     return [line.rstrip() for line in "\n".join(lines).splitlines()], passed
 
 
-def split_plays(play_events: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Hold out [last play - 14 days, last play] for each listener."""
+def split_plays(play_events: pd.DataFrame, days: int = 14) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Hold out [last play - days, last play] for each listener."""
+    if days <= 0:
+        raise ValueError("Holdout days must be positive.")
     events = play_events.copy()
     events["played_at"] = pd.to_datetime(events["played_at"], errors="raise")
     if events[["user_id", "played_at"]].isna().any().any():
         raise ValueError("Every play must have a user_id and played_at.")
 
     last_play = events.groupby("user_id")["played_at"].transform("max")
-    cutoff = last_play - pd.Timedelta(14, unit="D")
+    cutoff = last_play - pd.Timedelta(days, unit="D")
     held_out_mask = events["played_at"] >= cutoff
     training = events.loc[~held_out_mask].sort_values(["user_id", "played_at"])
     held_out = events.loc[held_out_mask].sort_values(["user_id", "played_at"])
@@ -186,6 +188,17 @@ def main(argv: list[str] | None = None) -> int:
     genres = top_tracks[["track_id", "track_name"]].merge(
         track_catalogue[["track_id", "genre"]], on="track_id", validate="one_to_one", sort=False
     )
+    window_comparison = []
+    for days in (7, 14, 21):
+        earlier, later = split_plays(play_events, days=days)
+        per_user_counts = later.groupby("user_id").size()
+        window_comparison.append({
+            "holdout_days": days,
+            "training_plays": len(earlier),
+            "held_out_plays": len(later),
+            "listeners_without_training": play_events["user_id"].nunique() - earlier["user_id"].nunique(),
+            "listeners_with_one_held_out_play": int(per_user_counts.eq(1).sum()),
+        })
 
     report = "\n".join(
         validation + [
@@ -234,6 +247,14 @@ def main(argv: list[str] | None = None) -> int:
             "",
             "Genres of the 10 recommended tracks:",
             genres.to_string(index=False),
+            "",
+            "Holdout-size comparison on supplied file (not optimized using recall):",
+            pd.DataFrame(window_comparison).to_string(index=False),
+            "14 days retains 56 training plays and supplies 24 held-out plays, with 3 listeners lacking training.",
+            "Compared with 7 days, this adds 3 evaluation plays but loses 3 training plays and 2 warm listeners.",
+            "Compared with 21 days, this preserves 2 training plays at the cost of 2 evaluation plays.",
+            "Retained the preselected 14-day horizon for consistent future-model comparisons.",
+            "16 of 19 listeners have just one held-out play: this is a small, uncertain evaluation, not evidence that 14 days is optimal.",
         ]
     )
     args.output.write_text(report + "\n", encoding="utf-8")

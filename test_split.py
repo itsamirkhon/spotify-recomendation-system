@@ -72,6 +72,10 @@ class SplitTests(unittest.TestCase):
         self.assertEqual(train.index.tolist(), [0])
         self.assertEqual(set(held.index), {1, 2, 3})
         self.assertEqual(len(train) + len(held), len(self.small))
+        short_train, short_held = split_plays(self.small, days=7)
+        self.assertEqual((len(short_train), len(short_held)), (2, 2))
+        with self.assertRaises(ValueError):
+            split_plays(self.small, days=0)
 
     def test_recall_uses_unique_tracks_and_skips_missing_holdout(self):
         train = pd.DataFrame({"user_id": [1, 2], "track_id": ["t0", "t0"]})

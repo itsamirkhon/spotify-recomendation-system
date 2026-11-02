@@ -11,13 +11,30 @@ every earlier play is used for training. Rows are never shuffled. The supplied
 file yields 56 training plays and 24 held-out plays. All 19 listeners have
 held-out plays; 3 have no earlier training history.
 
+I checked the trade-off against 7 and 21 days on the supplied data:
+
+| Holdout | Training plays | Held-out plays | Listeners without training |
+| --- | ---: | ---: | ---: |
+| 7 days | 59 | 21 | 1 |
+| 14 days | 56 | 24 | 3 |
+| 21 days | 54 | 26 | 3 |
+
+I retained the preselected 14-day horizon: it adds 3 held-out plays over 7 days,
+while retaining 2 more training plays than 21 days. The cost versus 7 days is
+3 fewer training plays and 2 more listeners without training history. This is
+a deliberate middle horizon, not evidence that 14 days is statistically best.
+Only 24 plays are held out, and 16 of 19 listeners have a single held-out play,
+so recall is noisy. Seven days would retain more warm listeners if that were
+the priority. I did not select the horizon to maximize held-out recall; later
+models must use the same split for comparison.
+
 # Key prompt for the Claude Code stage
 
 > In split.py, split each listener's plays by played_at, never by shuffling rows:
 > hold out each listener's final 2 weeks of plays, counted back from their own
 > last play, and keep every earlier play for training. I chose 2 weeks because
-> [This preserves most of the history for training and evaluates recommendations
-> on future listening events]. Print the row counts of the training and held-out
+> this preserves most of the history for training and evaluates recommendations
+> on future listening events. Print the row counts of the training and held-out
 > sets, then for five listeners print user_id, latest training played_at and
 > earliest held-out played_at side by side. Save everything the script prints
 > to output.txt.
@@ -33,8 +50,8 @@ held-out plays; 3 have no earlier training history.
 - The stage review confirmed that the supplied file also contains 80 rows and
   19 listeners in its own check, and instructed us to finish the baseline on
   that file with the discrepancies documented. The baseline therefore runs
-  on the supplied file by default. Resolving the attachment description with
-  its owner is outside this evaluation's scope and does not block submission.
+  on the supplied file by default. This supplied-file calculation does not
+  resolve the description mismatch or establish a full-log baseline.
 - The dates match 27 May-8 September 2024: 105 calendar days, exactly 15 weeks.
   The log plays 46 of the 60 catalogue tracks, rather than all 60 described;
   output.txt lists the 14 missing IDs. The largest history has 9 plays and the
