@@ -28,7 +28,32 @@ these small-sample metrics should be interpreted cautiously.
 
 # What I checked or changed
 
-- The brief describes about 2,000 listeners over about 15 weeks, but the supplied source CSV contains 80 play rows and 19 distinct listeners across those 15 weeks; its hash matches the script input, and split.py drops no play rows (56 training + 24 held-out = 80).
+- The brief describes about 2,000 listeners over about 15 weeks, and the review
+  expects about 40,000 play rows. The downloaded CSV actually contains 80 data
+  rows and 19 distinct listeners over 27 May-8 September 2024 (105 calendar days,
+  exactly 15 weeks).
+- Source provenance: the user confirms that the file named
+  `Spotify play-event log, 2,000 sampled listeners (27 May to 8 Sep 2024).csv`
+  was downloaded directly from the task's Resources attachment, not obtained
+  from another source or intentionally sampled. The user reports that the
+  resource offers a download without a separate source URL. This provenance is
+  the user's confirmation; it has not been independently verified against the
+  server-side resource or confirmed by the task author.
+- On 2 November 2026, checked the downloaded Desktop file directly using Python's
+  CSV reader, independently of split.py: 5,836 bytes, 80 data rows, 19 distinct
+  user_id values. Its SHA-256 and the renamed script input's SHA-256 are both
+  `032f1080f0a8bda633ae4e332e497339157535da3fe2753556f4b87f7f6fd9c8`.
+  This proves those two local files are identical; it does not prove that the
+  download contains the complete server-side resource.
+- Traced the row counts: 80 in the downloaded CSV, 80 immediately after
+  pd.read_csv, and 56 training + 24 held-out = 80 after splitting. split.py has
+  no sampling, row limit, or filter that drops play rows. Its head(10) selects
+  ranked tracks, and head(5) limits only the displayed listener examples.
+- The source-size discrepancy remains unresolved. The reported recall and
+  coverage describe the supplied 80-row file only, not a verified 2,000-listener
+  dataset. Re-running that file cannot evaluate the advertised full log;
+  resolving this requires checking the upstream download or obtaining explicit
+  clarification from the task author. No additional plays were fabricated.
 - Loaded both CSVs into pandas and confirmed the actual data contains 80 play
   events, 19 listeners, 46 played tracks, and 60 catalogue tracks.
 - Used separate chronological cutoffs per listener. Checked every listener,
