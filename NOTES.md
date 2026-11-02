@@ -27,6 +27,7 @@ these small-sample metrics should be interpreted cautiously.
 
 # What I checked or changed
 
+- The brief describes about 2,000 listeners over about 15 weeks, but the supplied source CSV contains 80 play rows and 19 distinct listeners across those 15 weeks; its hash matches the script input, and split.py drops no play rows (56 training + 24 held-out = 80).
 - Loaded both CSVs into pandas and confirmed the actual data contains 80 play
   events, 19 listeners, 46 played tracks, and 60 catalogue tracks.
 - Used separate chronological cutoffs per listener. Checked every listener,
