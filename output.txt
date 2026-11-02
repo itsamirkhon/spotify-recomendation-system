@@ -1,5 +1,5 @@
 INPUT CHECK AGAINST RESOURCE DESCRIPTION (before splitting/scoring)
-Input file: spotify_play_events_2024-05-27_to_2024-09-08.csv
+Input file: play_log_fresh.csv
 Play log rows: 80; resource describes approximately 40,000.
 The approximate row count is reported for comparison, not treated as an exact requirement.
 Distinct listeners: 19; expected: 2,000.

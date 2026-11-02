@@ -1,0 +1,31 @@
+FRESH DOWNLOAD COMPARISON — 2 November 2026
+The user supplied play_log_fresh.csv after being asked to re-download the Resources attachment.
+Both files below were read in full; counts are independent of split.py.
+
+Fresh download: play_log_fresh.csv
+Bytes: 5836
+SHA-256: 032f1080f0a8bda633ae4e332e497339157535da3fe2753556f4b87f7f6fd9c8
+Data rows: 80
+Distinct listeners: 19
+Distinct played tracks: 46
+100217 plays: 9
+100217 distinct tracks: 6
+Date range: 2024-05-27 to 2024-09-08
+
+Previous input: spotify_play_events_2024-05-27_to_2024-09-08.csv
+Bytes: 5836
+SHA-256: 032f1080f0a8bda633ae4e332e497339157535da3fe2753556f4b87f7f6fd9c8
+Data rows: 80
+Distinct listeners: 19
+Distinct played tracks: 46
+100217 plays: 9
+100217 distinct tracks: 6
+Date range: 2024-05-27 to 2024-09-08
+
+Fresh-vs-previous byte comparison: PASS — identical.
+The freshly supplied download also has 80 rows and 19 listeners.
+The 100217 promise (60+ plays, 8+ tracks) also fails on the fresh download (9 plays, 6 tracks).
+The earlier small file was not replaced by a larger log on this re-download.
+This confirms the same downloaded contents on both occasions, not the reason for the mismatch.
+The resulting metrics apply to the supplied/re-downloaded file. No 2,000-listener result is claimed.
+The attachment click was performed by the user; no independent server-side verification is claimed.

@@ -61,8 +61,18 @@ models must use the same split for comparison.
   without intentional sampling. Its 5,836 bytes have SHA-256
   `032f1080f0a8bda633ae4e332e497339157535da3fe2753556f4b87f7f6fd9c8`,
   identical to the renamed script input. This proves local file identity, not
-  server-side completeness. No fresh download or data-owner confirmation is
-  claimed, and the cause of the description mismatch remains unresolved.
+  server-side completeness.
+- **Fresh download checked on 2 November 2026:** following the re-download
+  request, the user supplied `play_log_fresh.csv` from Downloads. Read it in
+  full, independently of split.py: **5,836 bytes, 80 rows, 19 listeners, 46
+  played tracks; user 100217 has 9 plays across 6 distinct tracks**. Its SHA-256
+  is the same hash above and its bytes exactly match the earlier input.
+  `download_comparison.txt` records counts, dates and hashes for both files.
+  Thus the repeated download also came back at 80 rows, not the advertised
+  40,000. The cause of the description mismatch and the data owner's position
+  remain unknown, but the fresh-file comparison has now been performed.
+  The user performed the download; no agent-operated attachment click or
+  independent server-side inspection is claimed.
 - Traced all 80 rows from the raw CSV through pandas into 56 training plus
   24 held-out rows. No sampling, read limit, or row-dropping filter is used.
 - Checked all 19 listeners: no held-out play is at or before that listener's
@@ -91,5 +101,10 @@ models must use the same split for comparison.
   count/breadth boundaries, source screening, cutoff ties, unique-track recall,
   normal scoring with documented mismatches, and optional strict rejection.
   Synthetic fixtures are tests only; no listening records were fabricated.
-- Confirmed that committed output.txt exactly matches stdout from the default
-  run, including counts, dates, source checks, top 10, metrics, and genres.
+- Re-ran the baseline directly on the fresh download:
+  `python split.py --play-log "/home/sukhrob/Загрузки/play_log_fresh.csv"`.
+  Confirmed committed output.txt exactly matches that run's stdout, including
+  counts, dates, source checks, top 10, metrics, and genres. The unchanged
+  recall@10 of 0.315789 and coverage of 0.166667 are results for this freshly
+  supplied file. Resource-description FAIL messages remain accurate; they
+  document the attachment mismatch, not missing rows discarded by the split.
